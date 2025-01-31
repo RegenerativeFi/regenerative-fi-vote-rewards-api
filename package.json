@@ -1,0 +1,19 @@
+{
+  "name": "rewards",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy --minify"
+  },
+  "dependencies": {
+    "hono": "^4.6.19"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20250109.0",
+    "@openzeppelin/merkle-tree": "^1.0.7",
+    "cron-parser": "^4.9.0",
+    "decimal.js": "^10.4.3",
+    "dotenv": "^16.4.7",
+    "viem": "^2.22.3",
+    "wrangler": "^3.101.0"
+  }
+}

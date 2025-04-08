@@ -20,6 +20,8 @@ export async function addProofs(
   const config = configs[network];
   const walletClient = config.wallet;
 
+  console.log("proofs", proofs);
+
   const data = encodeFunctionData({
     abi: RewardDistributor,
     functionName: "updateRewardsMetadata",

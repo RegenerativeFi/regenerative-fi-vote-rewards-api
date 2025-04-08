@@ -5,7 +5,7 @@ import {
   PublicClient,
 } from "viem";
 import { celoAlfajores } from "viem/chains";
-import { Network, type NetworkConfig } from "../types";
+import { Gauge, Network, type NetworkConfig } from "../types";
 
 export const publicClient = createPublicClient({
   batch: {
@@ -19,6 +19,24 @@ export const walletClient = createWalletClient({
   chain: celoAlfajores,
   transport: http(),
 });
+
+const gaugeList: Gauge[] = [
+  {
+    address: "0xd031e387129a0f8ab6500c4e9fb4342e568256d7",
+    lpToken: "0xf1a6f7570f0eefbb824ea05d32c88e78f0ed1564",
+    lpSymbol: "80tREGEN-20tCELO",
+  },
+  {
+    address: "0x30629e6ef6dbcfc7e16a746b5204173efa50f606",
+    lpToken: "0x614eb78cf5e2a78bd017a85190e998963d4febb9",
+    lpSymbol: "50tcUSD-50tCELO",
+  },
+  {
+    address: "0x215586111f9c15bda4e0754f1c38b2789a504914",
+    lpToken: "0xc60165f780da1dd32d969866bfd5b9c7007d8820",
+    lpSymbol: "tcUSD-tUSDC",
+  },
+];
 
 export const alfajores: NetworkConfig = {
   name: Network.ALFAJORES,
@@ -45,10 +63,7 @@ export const alfajores: NetworkConfig = {
   bribeApi: "https://incentives.regenerativefi.workers.dev",
   subgraphs: {
     gauges:
-      "https://api.goldsky.com/api/public/project_clnbo3e3c16lj33xva5r2aqk7/subgraphs/symmetric-telos-gauges/prod/gn",
+      "https://api.studio.thegraph.com/query/92572/regenerative-gauges-subgraph-testnet/version/latest",
   },
-  gauges: [
-    "0x0000000000000000000000000000000000000000",
-    "0x0000000000000000000000000000000000000000",
-  ],
+  gauges: gaugeList,
 };

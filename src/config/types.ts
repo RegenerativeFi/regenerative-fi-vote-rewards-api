@@ -1,9 +1,14 @@
 import { type PublicClient, type WalletClient } from "viem";
 
 export enum Network {
-  CELO = "Celo",
-  ALFAJORES = "Alfajores",
+  CELO = "celo",
+  ALFAJORES = "alfajores",
 }
+export type Gauge = {
+  address: `0x${string}`;
+  lpToken: `0x${string}`;
+  lpSymbol: string;
+};
 
 export type NetworkConfig = {
   name: Network;
@@ -18,7 +23,7 @@ export type NetworkConfig = {
   subgraphs?: {
     gauges?: string;
   };
-  gauges: string[];
+  gauges: Gauge[];
   maxLockDuration: number;
 };
 

@@ -119,6 +119,7 @@ export function getMerkleTree(
 }
 
 export async function getUserProofs(user: string, network: Network, env: Env) {
+  console.log("Getting user proofs for", user, network);
   const keys = await env.MERKLE_TREES.list({
     prefix: `merkle-trees-${network}-`,
   });
@@ -131,8 +132,8 @@ export async function getUserProofs(user: string, network: Network, env: Env) {
       amount: string;
       proof: string[];
       root: string;
-      claimed: bigint;
-      claimable: bigint;
+      claimed: string;
+      claimable: string;
     }[]
   > = {};
 
@@ -151,6 +152,7 @@ export async function getUserProofs(user: string, network: Network, env: Env) {
         );
 
         for (const [i, v] of merkleTree.entries()) {
+          console.log(v);
           if (v[0] === user) {
             proofs[deadline].push({
               identifier,
@@ -158,8 +160,8 @@ export async function getUserProofs(user: string, network: Network, env: Env) {
               amount: v[1],
               proof: merkleTree.getProof(i),
               root,
-              claimed: 0n,
-              claimable: 0n,
+              claimed: "0",
+              claimable: "0",
             });
             break;
           }
@@ -212,8 +214,8 @@ export async function getUserProofsWithClaimed(
         (totalsByToken[proof.token] || 0n) + claimable;
 
       // Keep proof with claim info
-      proof.claimed = claimed;
-      proof.claimable = claimable;
+      proof.claimed = claimed.toString();
+      proof.claimable = claimable.toString();
       return true;
     });
 
@@ -227,4 +229,21 @@ export async function getUserProofsWithClaimed(
     proofs,
     totals: totalsByToken,
   };
+}
+
+export async function storeProofTransaction(
+  deadline: number,
+  network: Network,
+  txHash: string,
+  env: Env
+) {
+  await env.MERKLE_TREES.put(`proof-tx-${network}-${deadline}`, txHash);
+}
+
+export async function getProofTransaction(
+  deadline: number,
+  network: Network,
+  env: Env
+): Promise<string | null> {
+  return await env.MERKLE_TREES.get(`proof-tx-${network}-${deadline}`);
 }

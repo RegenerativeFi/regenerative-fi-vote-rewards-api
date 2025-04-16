@@ -57,11 +57,14 @@ export async function processBribes(
     subgraph
   );
 
+  console.log("Gauge votes", gaugeVotes);
+
   // Calculate rewards
   const rewardsByToken = calculateRewards(bribes, gaugeVotes);
-
+  console.log("Rewards by token", rewardsByToken);
   // Create and store merkle trees
   const merkleData = createMerkleTrees(rewardsByToken, deadline, network);
+  console.log("Merkle data", merkleData);
   await storeMerkleTrees(merkleData, deadline, network, env);
 
   // Add proofs to the RewardDistributor contract
@@ -72,6 +75,12 @@ export async function processBribes(
     proof:
       "0x0000000000000000000000000000000000000000000000000000000000000000" as `0x${string}`,
   }));
+
+  console.log("Proofs", proofs);
+
+  if (proofs.length === 0) {
+    return { rewardsByToken, merkleData, txHash: null };
+  }
 
   const account = privateKeyToAccount(env.PRIVATE_KEY as `0x${string}`);
 
@@ -97,8 +106,15 @@ export async function processBribesForDeadline(
     throw new Error("Gauges subgraph is not configured");
   }
 
+  // Get unique gauge addresses that have bribes and are in our config
+  const gaugesWithBribes = [
+    ...new Set(bribes.map((bribe) => bribe.gauge.toLowerCase())),
+  ].filter((address) =>
+    gauges.some((g) => g.address.toLowerCase() === address)
+  );
+
   return processBribes(
-    gauges.map((gauge) => gauge.address),
+    gaugesWithBribes,
     deadline,
     lockTimestamp,
     bribes,

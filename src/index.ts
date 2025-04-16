@@ -11,7 +11,11 @@ import {
 } from "./services/bribes";
 import { parseExpression } from "cron-parser";
 import { Bindings } from "./types";
-import { getUserProofs, loadMerkleData } from "./services/merkle";
+import {
+  getUserProofs,
+  getUserProofsWithClaimed,
+  loadMerkleData,
+} from "./services/merkle";
 import { addProofs } from "./services/distribute";
 import { privateKeyToAccount } from "viem/accounts";
 
@@ -120,19 +124,19 @@ app.get("/:network/distribute-proofs/:deadline", async (c) => {
   };
 
   // Check if we already have a successful transaction
-  const existingTx = await getProofTransaction(
-    Number(deadline),
-    network,
-    c.env
-  );
-  if (existingTx) {
-    const receipt = await configs[network].client.getTransactionReceipt({
-      hash: existingTx as `0x${string}`,
-    });
-    if (receipt && receipt.status === "success") {
-      return c.json({ txHash: existingTx, status: "already_processed" });
-    }
-  }
+  // const existingTx = await getProofTransaction(
+  //   Number(deadline),
+  //   network,
+  //   c.env
+  // );
+  // if (existingTx) {
+  //   const receipt = await configs[network].client.getTransactionReceipt({
+  //     hash: existingTx as `0x${string}`,
+  //   });
+  //   if (receipt && receipt.status === "success") {
+  //     return c.json({ txHash: existingTx, status: "already_processed" });
+  //   }
+  // }
 
   // load merkle trees
   const trees = await loadMerkleData(Number(deadline), network, c.env);
@@ -142,9 +146,13 @@ app.get("/:network/distribute-proofs/:deadline", async (c) => {
       identifier: tree.identifier as `0x${string}`,
       token: token as `0x${string}`,
       merkleRoot: tree.root as `0x${string}`,
-      proof: "0x" as `0x${string}`,
+      proof: tree.root as `0x${string}`,
     })
   );
+
+  if (proofs.length === 0) {
+    return c.json({ txHash: null, status: "no_proofs" });
+  }
 
   // Distribute proofs
   const account = privateKeyToAccount(c.env.PRIVATE_KEY as `0x${string}`);
@@ -159,7 +167,11 @@ app.get("/:network/distribute-proofs/:deadline", async (c) => {
 app.get("/:network/proofs/:user", async (c) => {
   const { network, user } = c.req.param() as { network: Network; user: string };
   validateNetworkConfig(network);
-  const proofs = await getUserProofs(user.toLowerCase(), network, c.env);
+  const proofs = await getUserProofsWithClaimed(
+    user.toLowerCase(),
+    network,
+    c.env
+  );
   return c.json(proofs);
 });
 

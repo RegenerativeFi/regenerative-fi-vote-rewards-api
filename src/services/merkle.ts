@@ -1,4 +1,4 @@
-import { StandardMerkleTree } from "@openzeppelin/merkle-tree";
+import { SimpleMerkleTree } from "@openzeppelin/merkle-tree";
 import type Decimal from "decimal.js";
 import { Env } from "../index";
 import { Network } from "../config/types";
@@ -34,10 +34,17 @@ export function createMerkleTrees(
   };
 
   for (const token in rewardsByToken) {
-    const rewardTree = StandardMerkleTree.of(
-      rewardsByToken[token].userRewards.map((r) => [r.user, r.amount]),
-      ["address", "uint256"]
+    // Hash each leaf: keccak256(abi.encodePacked(user, amount))
+    const leaves = rewardsByToken[token].userRewards.map((r) =>
+      keccak256(
+        encodePacked(
+          ["address", "uint256"],
+          [r.user as `0x${string}`, BigInt(r.amount)]
+        )
+      )
     );
+
+    const tree = SimpleMerkleTree.of(leaves);
 
     merkleData[deadline][token] = {
       identifier: generateRewardIdentifier(
@@ -45,8 +52,8 @@ export function createMerkleTrees(
         token as `0x${string}`,
         BigInt(deadline)
       ),
-      root: rewardTree.root,
-      tree: JSON.stringify(rewardTree.dump()),
+      root: tree.root,
+      tree: JSON.stringify(tree.dump()),
     };
   }
 
@@ -115,7 +122,7 @@ export function getMerkleTree(
       `No merkle tree found for deadline ${deadline} and token ${token}`
     );
   }
-  return StandardMerkleTree.load(JSON.parse(data[deadline][token].tree));
+  return SimpleMerkleTree.load(JSON.parse(data[deadline][token].tree));
 }
 
 export async function getUserProofs(user: string, network: Network, env: Env) {
@@ -144,26 +151,32 @@ export async function getUserProofs(user: string, network: Network, env: Env) {
       proofs[deadline] = [];
 
       for (const [token, { tree, root }] of Object.entries(data[deadline])) {
-        const merkleTree = StandardMerkleTree.load(JSON.parse(tree));
+        const merkleTree = SimpleMerkleTree.load(JSON.parse(tree));
         const identifier = generateRewardIdentifier(
           configs[network].contracts.regenerativeBribeMarket,
           token as `0x${string}`,
           BigInt(deadline)
         );
-
         for (const [i, v] of merkleTree.entries()) {
-          console.log(v);
-          if (v[0] === user) {
+          // Find user's leaf by hashing their data
+          const userLeaf = keccak256(
+            encodePacked(
+              ["address", "uint256"],
+              [user as `0x${string}`, BigInt(v[1])]
+            )
+          );
+
+          const proof = merkleTree.getProof(userLeaf);
+          if (proof) {
             proofs[deadline].push({
               identifier,
               token,
-              amount: v[1],
-              proof: merkleTree.getProof(i),
+              amount: v[1].toString(),
+              proof,
               root,
               claimed: "0",
               claimable: "0",
             });
-            break;
           }
         }
       }
@@ -197,7 +210,7 @@ export async function getUserProofsWithClaimed(
   });
 
   // Track total claimable by token
-  const totalsByToken: Record<string, bigint> = {};
+  const totalsByToken: Record<string, string> = {};
 
   // Map results back to proofs and filter out fully claimed
   let claimIndex = 0;
@@ -210,8 +223,9 @@ export async function getUserProofsWithClaimed(
       if (claimable <= 0n) return false;
 
       // Add to totals
-      totalsByToken[proof.token] =
-        (totalsByToken[proof.token] || 0n) + claimable;
+      totalsByToken[proof.token] = (
+        BigInt(totalsByToken[proof.token] || "0") + claimable
+      ).toString();
 
       // Keep proof with claim info
       proof.claimed = claimed.toString();

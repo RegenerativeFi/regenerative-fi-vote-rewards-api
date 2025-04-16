@@ -37,7 +37,7 @@ export function calculateRewards(
   > = {};
 
   bribes.forEach((bribe) => {
-    const votes = gaugeVotes[bribe.gauge];
+    const votes = gaugeVotes[bribe.gauge.toLowerCase()];
     if (!votes || votes.length === 0) return;
 
     if (!rewardsByToken[bribe.token]) {

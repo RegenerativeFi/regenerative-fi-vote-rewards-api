@@ -138,6 +138,10 @@ export async function getGaugeVotes(
   lockTimestamp: number,
   gaugesSubgraph: string
 ): Promise<GaugeVote[]> {
+  console.log("Getting gauge votes for", gauge);
+  console.log("Gauges subgraph", gaugesSubgraph);
+  console.log("Vote deadline", voteDeadline);
+  console.log("Lock timestamp", lockTimestamp);
   // 1. Get all users who voted for the gauge
   const response = await fetch(gaugesSubgraph, {
     method: "POST",
@@ -200,13 +204,13 @@ export async function getGaugeVotes(
         })
     )
   ).filter((vote) => vote.weightedVotePower.gt(0)); // Filter out zero vote power
-
+  console.log("Processed votes", processedVotes);
   // 3. Calculate total voting power
   const totalVotePower = processedVotes.reduce(
     (sum, vote) => sum.plus(vote.weightedVotePower),
     new Decimal(0)
   );
-
+  console.log("Total vote power", totalVotePower);
   // 4. Add total voting power to each vote
   return processedVotes.map((vote) => ({
     ...vote,

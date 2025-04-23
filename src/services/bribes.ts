@@ -22,20 +22,23 @@ type BribesResponse = {
   }[];
 };
 
+export const getCacheKey = (network: Network, deadline?: string) => {
+  return `incentives:${network}${deadline ? `:${deadline}` : ""}`;
+};
+
 export async function fetchBribes(
   deadline: number,
-  bribeApi: string,
+  env: Env,
   network: Network
 ) {
-  const queryUrl = `${bribeApi}/${network}/get-incentives/${deadline}`;
-  console.log("Fetching bribes from", queryUrl);
-  const bribes = await fetch(queryUrl);
+  const cacheKey = getCacheKey(network, deadline.toString());
+  const bribes = await env.INCENTIVES_KV.get(cacheKey);
 
-  if (!bribes.ok) {
-    throw new Error("Failed to fetch bribes");
+  if (!bribes) {
+    return [];
   }
 
-  const bribesData = (await bribes.json()) as BribesResponse;
+  const bribesData = JSON.parse(bribes) as BribesResponse;
 
   return bribesData.bribes;
 }
@@ -98,9 +101,9 @@ export async function processBribesForDeadline(
   deadline: number,
   env: Env
 ) {
-  const { gauges, subgraphs, bribeApi, maxLockDuration } = configs[network];
+  const { gauges, subgraphs, maxLockDuration } = configs[network];
   const lockTimestamp = deadline - maxLockDuration;
-  const bribes = await fetchBribes(deadline, bribeApi, network);
+  const bribes = await fetchBribes(deadline, env, network);
 
   if (!subgraphs?.gauges) {
     throw new Error("Gauges subgraph is not configured");

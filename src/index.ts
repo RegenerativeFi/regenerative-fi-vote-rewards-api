@@ -24,6 +24,7 @@ export interface Env {
   BW: Fetcher;
   URL: string;
   MERKLE_TREES: KVNamespace;
+  INCENTIVES_KV: KVNamespace;
   GITHUB_TOKEN: string;
   PRIVATE_KEY: string;
 }
@@ -117,52 +118,61 @@ app.get("/:network/process-bribes/:deadline", async (c) => {
   return c.json(data);
 });
 
-app.get("/:network/distribute-proofs/:deadline", async (c) => {
+app.get("/:network/merkle-trees/:deadline", async (c) => {
   const { network, deadline } = c.req.param() as {
     network: Network;
     deadline: string;
   };
-
-  // Check if we already have a successful transaction
-  // const existingTx = await getProofTransaction(
-  //   Number(deadline),
-  //   network,
-  //   c.env
-  // );
-  // if (existingTx) {
-  //   const receipt = await configs[network].client.getTransactionReceipt({
-  //     hash: existingTx as `0x${string}`,
-  //   });
-  //   if (receipt && receipt.status === "success") {
-  //     return c.json({ txHash: existingTx, status: "already_processed" });
-  //   }
-  // }
-
-  // load merkle trees
-  const trees = await loadMerkleData(Number(deadline), network, c.env);
-
-  const proofs = Object.entries(trees[Number(deadline)]).map(
-    ([token, tree]) => ({
-      identifier: tree.identifier as `0x${string}`,
-      token: token as `0x${string}`,
-      merkleRoot: tree.root as `0x${string}`,
-      proof: tree.root as `0x${string}`,
-    })
-  );
-
-  if (proofs.length === 0) {
-    return c.json({ txHash: null, status: "no_proofs" });
-  }
-
-  // Distribute proofs
-  const account = privateKeyToAccount(c.env.PRIVATE_KEY as `0x${string}`);
-  const txHash = await addProofs(proofs, network, account);
-
-  // Store the transaction hash
-  await storeProofTransaction(Number(deadline), network, txHash, c.env);
-
-  return c.json({ txHash, status: "processing" });
+  const data = await loadMerkleData(Number(deadline), network, c.env);
+  return c.json(data);
 });
+
+// app.get("/:network/distribute-proofs/:deadline", async (c) => {
+//   const { network, deadline } = c.req.param() as {
+//     network: Network;
+//     deadline: string;
+//   };
+
+//   // Check if we already have a successful transaction
+//   // const existingTx = await getProofTransaction(
+//   //   Number(deadline),
+//   //   network,
+//   //   c.env
+//   // );
+//   // if (existingTx) {
+//   //   const receipt = await configs[network].client.getTransactionReceipt({
+//   //     hash: existingTx as `0x${string}`,
+//   //   });
+//   //   if (receipt && receipt.status === "success") {
+//   //     return c.json({ txHash: existingTx, status: "already_processed" });
+//   //   }
+//   // }
+
+//   // load merkle trees
+//   const trees = await loadMerkleData(Number(deadline), network, c.env);
+
+//   const proofs = Object.entries(trees[Number(deadline)]).map(
+//     ([token, tree]) => ({
+//       identifier: tree.identifier as `0x${string}`,
+//       token: token as `0x${string}`,
+//       merkleRoot: tree.root as `0x${string}`,
+//       proof: tree.root as `0x${string}`,
+//     })
+//   );
+
+//   if (proofs.length === 0) {
+//     return c.json({ txHash: null, status: "no_proofs" });
+//   }
+
+//   // Distribute proofs
+//   const account = privateKeyToAccount(c.env.PRIVATE_KEY as `0x${string}`);
+//   const txHash = await addProofs(proofs, network, account);
+
+//   // Store the transaction hash
+//   await storeProofTransaction(Number(deadline), network, txHash, c.env);
+
+//   return c.json({ txHash, status: "processing" });
+// });
 
 app.get("/:network/proofs/:user", async (c) => {
   const { network, user } = c.req.param() as { network: Network; user: string };

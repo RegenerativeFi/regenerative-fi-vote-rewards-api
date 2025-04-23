@@ -8,6 +8,7 @@ export interface Env {
   BW: Fetcher;
   URL: string;
   MERKLE_TREES: KVNamespace;
+  INCENTIVES_KV: KVNamespace;
   GITHUB_TOKEN: string;
   PRIVATE_KEY: string;
 }

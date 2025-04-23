@@ -13,6 +13,7 @@ export type MerkleData = {
       identifier: string;
       root: string;
       tree: string;
+      userRewards: { user: string; amount: string }[];
     };
   };
 };
@@ -34,7 +35,6 @@ export function createMerkleTrees(
   };
 
   for (const token in rewardsByToken) {
-    // Hash each leaf: keccak256(abi.encodePacked(user, amount))
     const leaves = rewardsByToken[token].userRewards.map((r) =>
       keccak256(
         encodePacked(
@@ -54,6 +54,7 @@ export function createMerkleTrees(
       ),
       root: tree.root,
       tree: JSON.stringify(tree.dump()),
+      userRewards: rewardsByToken[token].userRewards,
     };
   }
 
@@ -130,15 +131,21 @@ export async function getUserProofs(user: string, network: Network, env: Env) {
   const keys = await env.MERKLE_TREES.list({
     prefix: `merkle-trees-${network}-`,
   });
+  console.log(
+    "Found merkle trees:",
+    keys.keys.map((k) => k.name)
+  );
 
   const proofs: Record<
     string,
     {
       identifier: string;
       token: string;
+      user: string;
       amount: string;
       proof: string[];
       root: string;
+      deadline: number;
       claimed: string;
       claimable: string;
     }[]
@@ -150,19 +157,25 @@ export async function getUserProofs(user: string, network: Network, env: Env) {
       const data = await loadMerkleData(Number(deadline), network, env);
       proofs[deadline] = [];
 
-      for (const [token, { tree, root }] of Object.entries(data[deadline])) {
+      for (const [token, { tree, root, userRewards }] of Object.entries(
+        data[deadline]
+      )) {
+        console.log(`Processing token ${token} for deadline ${deadline}`);
         const merkleTree = SimpleMerkleTree.load(JSON.parse(tree));
         const identifier = generateRewardIdentifier(
           configs[network].contracts.regenerativeBribeMarket,
           token as `0x${string}`,
           BigInt(deadline)
         );
-        for (const [i, v] of merkleTree.entries()) {
-          // Find user's leaf by hashing their data
+
+        const userReward = userRewards.find(
+          (v) => v.user.toLowerCase() === user.toLowerCase()
+        );
+        if (userReward) {
           const userLeaf = keccak256(
             encodePacked(
               ["address", "uint256"],
-              [user as `0x${string}`, BigInt(v[1])]
+              [user as `0x${string}`, BigInt(userReward.amount)]
             )
           );
 
@@ -171,7 +184,9 @@ export async function getUserProofs(user: string, network: Network, env: Env) {
             proofs[deadline].push({
               identifier,
               token,
-              amount: v[1].toString(),
+              user,
+              amount: userReward.amount,
+              deadline: Number(deadline),
               proof,
               root,
               claimed: "0",

@@ -161,6 +161,7 @@ export async function getUserProofs(user: string, network: Network, env: Env) {
         data[deadline]
       )) {
         console.log(`Processing token ${token} for deadline ${deadline}`);
+        console.log("tree", tree);
         const merkleTree = SimpleMerkleTree.load(JSON.parse(tree));
         const identifier = generateRewardIdentifier(
           configs[network].contracts.regenerativeBribeMarket,
@@ -224,18 +225,25 @@ export async function getUserProofsWithClaimed(
     contracts: calls,
   });
 
-  // Track total claimable by token
+  const now = Math.floor(Date.now() / 1000);
   const totalsByToken: Record<string, string> = {};
 
-  // Map results back to proofs and filter out fully claimed
+  // Map results back to proofs and filter out fully claimed or not yet claimable
   let claimIndex = 0;
   for (const deadline in proofs) {
+    // Get proof transaction data to check if rewards are claimable
+    const txData = await getProofTransaction(Number(deadline), network, env);
+    const claimableTime =
+      txData?.timestamp != null
+        ? txData.timestamp + configs[network].proofWaitTime
+        : 0;
+
     proofs[deadline] = proofs[deadline].filter((proof) => {
       const claimed = claimedAmounts[claimIndex++].result as bigint;
       const claimable = BigInt(proof.amount) - claimed;
 
-      // Skip if fully claimed
-      if (claimable <= 0n) return false;
+      // Skip if fully claimed or not yet claimable
+      if (claimable <= 0n || now < claimableTime) return false;
 
       // Add to totals
       totalsByToken[proof.token] = (
@@ -260,19 +268,32 @@ export async function getUserProofsWithClaimed(
   };
 }
 
+export type ProofTxData = {
+  hash: string;
+  timestamp: number;
+};
+
 export async function storeProofTransaction(
   deadline: number,
   network: Network,
   txHash: string,
   env: Env
 ) {
-  await env.MERKLE_TREES.put(`proof-tx-${network}-${deadline}`, txHash);
+  const data: ProofTxData = {
+    hash: txHash,
+    timestamp: Math.floor(Date.now() / 1000),
+  };
+  await env.MERKLE_TREES.put(
+    `proof-tx-${network}-${deadline}`,
+    JSON.stringify(data)
+  );
 }
 
 export async function getProofTransaction(
   deadline: number,
   network: Network,
   env: Env
-): Promise<string | null> {
-  return await env.MERKLE_TREES.get(`proof-tx-${network}-${deadline}`);
+): Promise<ProofTxData | null> {
+  const data = await env.MERKLE_TREES.get(`proof-tx-${network}-${deadline}`);
+  return data ? JSON.parse(data) : null;
 }

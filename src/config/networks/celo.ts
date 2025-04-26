@@ -52,6 +52,7 @@ export const celo: NetworkConfig = {
   proposalStartTime: 1743465600, // 2025-04-01 00:00:00 UTC
   proposalDuration: 86400,
   maxLockDuration: 31536000, // 1 year
+  proofWaitTime: 3 * 60 * 60, // 3 hours
   cron: "0 0 * * *",
   cronJobs: {
     setProposals: {

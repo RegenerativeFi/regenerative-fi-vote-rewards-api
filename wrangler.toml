@@ -7,6 +7,9 @@ compatibility_date = "2025-01-27"
 # [vars]
 # MY_VAR = "my-variable"
 
+[triggers]
+crons = [ "2 0 * * *" ]
+
 [[kv_namespaces]]
 binding = "MERKLE_TREES"
 id = "a2af0e168ff14aa1bc6e917ad49936ec"

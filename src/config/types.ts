@@ -10,22 +10,27 @@ export type Gauge = {
   lpSymbol: string;
 };
 
-export type NetworkConfig = {
+export interface NetworkConfig {
   name: Network;
   client: PublicClient;
   wallet: WalletClient;
-  proposalDuration: number;
   proposalStartTime: number;
+  proposalDuration: number;
+  maxLockDuration: number;
+  proofWaitTime: number;
   cron: string;
-  cronJobs: Record<string, { cron: string }>;
+  cronJobs: {
+    setProposals: {
+      cron: string;
+    };
+  };
   contracts: Contracts;
   bribeApi: string;
   subgraphs?: {
     gauges?: string;
   };
   gauges: Gauge[];
-  maxLockDuration: number;
-};
+}
 
 export type Contracts = {
   gaugeRegistry: `0x${string}`;

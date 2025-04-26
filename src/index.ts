@@ -86,7 +86,7 @@ export async function processBribesForNetwork(
     // If we have both merkle data and a transaction hash, verify the tx
     if (txHash) {
       const receipt = await networkConfig.client.getTransactionReceipt({
-        hash: txHash as `0x${string}`,
+        hash: txHash.hash as `0x${string}`,
       });
 
       if (receipt && receipt.status === "success") {
@@ -114,6 +114,10 @@ app.get("/:network/process-bribes/:deadline", async (c) => {
     network: Network;
     deadline: string;
   };
+  // Enforce deadline has passed
+  if (Number(deadline) > Math.floor(Date.now() / 1000)) {
+    return c.json({ error: "Deadline has not passed" }, 400);
+  }
   const data = await processBribesForNetwork(network, c.env, Number(deadline));
   return c.json(data);
 });

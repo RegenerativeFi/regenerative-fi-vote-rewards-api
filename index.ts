@@ -26,8 +26,8 @@ export default {
     console.log("Cron job triggered", event.cron);
     switch (event.cron) {
       case "2 0 * * *":
-        console.log("Processing bribes for Alfajores");
-        await processBribesForNetwork(Network.ALFAJORES, env);
+        // console.log("Processing bribes for Alfajores");
+        // await processBribesForNetwork(Network.ALFAJORES, env);
         console.log("Processing bribes for Celo");
         await processBribesForNetwork(Network.CELO, env);
         break;

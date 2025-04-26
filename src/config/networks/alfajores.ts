@@ -45,6 +45,7 @@ export const alfajores: NetworkConfig = {
   proposalStartTime: 1735948800, // 2025-01-04 00:00:00 UTC
   proposalDuration: 86400, // 1 day
   maxLockDuration: 31536000, // 1 year
+  proofWaitTime: 3 * 60 * 60, // 3 hours
   cron: "0 0 * * *",
   cronJobs: {
     setProposals: {

@@ -104,6 +104,7 @@ export async function processBribesForDeadline(
   const { gauges, subgraphs, maxLockDuration } = configs[network];
   const lockTimestamp = deadline - maxLockDuration;
   const bribes = await fetchBribes(deadline, env, network);
+  console.log("Bribes", bribes);
 
   if (!subgraphs?.gauges) {
     throw new Error("Gauges subgraph is not configured");

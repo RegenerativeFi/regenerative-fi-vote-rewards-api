@@ -106,6 +106,10 @@ export async function processBribesForDeadline(
   const bribes = await fetchBribes(deadline, env, network);
   console.log("Bribes", bribes);
 
+  if (bribes.length === 0) {
+    return { rewardsByToken: {}, merkleData: {}, txHash: null };
+  }
+
   if (!subgraphs?.gauges) {
     throw new Error("Gauges subgraph is not configured");
   }
